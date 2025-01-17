@@ -1,6 +1,6 @@
 void build(Solution &s)
 {
-    auto &tess = s.addProject("google.tesseract", "master");
+    auto &tess = s.addProject("google.tesseract", "main");
     tess += Git("https://github.com/tesseract-ocr/tesseract", "", "{v}");
 
     auto cppstd = cpp17;
@@ -15,17 +15,11 @@ void build(Solution &s)
 
         libtesseract += "TESS_API"_api;
         libtesseract += "include/.*"_rr;
-        libtesseract += "src/.*"_rr;
-        libtesseract -= "src/lstm/.*\\.cc"_rr;
+        libtesseract += "src/.+/.*"_rr;
         libtesseract -= "src/training/.*"_rr;
-
-        libtesseract -=
-            "src/tesseract.cpp",
-            "src/viewer/svpaint.cpp";
 
         libtesseract.Public += "include"_idir;
         libtesseract.Protected +=
-            "src/opencl"_id,
             "src/ccmain"_id,
             "src/api"_id,
             "src/dict"_id,
@@ -72,7 +66,8 @@ void build(Solution &s)
         // check arch (arm)
         libtesseract -= "src/arch/dotproductneon.cpp";
 
-        if (libtesseract.getBuildSettings().TargetOS.Type != OSType::Windows)
+        if (libtesseract.getBuildSettings().TargetOS.Type != OSType::Windows &&
+            libtesseract.getBuildSettings().TargetOS.Arch != ArchType::aarch64)
         {
             libtesseract["src/arch/dotproductavx.cpp"].args.push_back("-mavx");
             libtesseract["src/arch/dotproductavx512.cpp"].args.push_back("-mavx512f");
@@ -81,7 +76,16 @@ void build(Solution &s)
             libtesseract["src/arch/intsimdmatrixavx2.cpp"].args.push_back("-mavx2");
         }
         if (!win_or_mingw)
-            libtesseract += "pthread"_slib;
+        {
+#if SW_MODULE_ABI_VERSION > 29
+            if (!libtesseract.getBuildSettings().TargetOS.Android)
+#endif
+                libtesseract += "pthread"_slib;
+        }
+        if (libtesseract.getBuildSettings().TargetOS.Arch == ArchType::aarch64)
+        {
+            libtesseract += "src/arch/dotproductneon.cpp";
+        }
 
         libtesseract.Public += "HAVE_CONFIG_H"_d;
         libtesseract.Public += "_SILENCE_STDEXT_HASH_DEPRECATION_WARNINGS=1"_d;
@@ -112,6 +116,13 @@ void build(Solution &s)
         tesseract += cppstd;
         tesseract += "src/tesseract.cpp";
         tesseract += libtesseract;
+    }
+
+    auto &svpaint = tess.addExecutable("svpaint");
+    {
+        svpaint += cppstd;
+        svpaint += "src/svpaint.cpp";
+        svpaint += libtesseract;
     }
 
     auto &training = tess.addDirectory("training");
@@ -323,8 +334,7 @@ void build(Solution &s)
 
         auto &tw = add_test("tatweel");
         tw += "unittest/util/.*"_rr;
-        tw += "unittest/third_party/.*"_rr;
-        tw -= "unittest/third_party/googletest/.*"_rr;
+        tw += "unittest/third_party/utf/.*"_rr;
     }
 }
 

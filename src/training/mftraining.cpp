@@ -201,7 +201,7 @@ int main(int argc, char **argv) {
   // Load the training data.
   auto trainer = tesseract::LoadTrainingData(argv + 1, false, &shape_table, file_prefix);
   if (trainer == nullptr) {
-    return 1; // Failed.
+    return EXIT_FAILURE; // Failed.
   }
 
   // Setup an index mapping from the shapes in the shape table to the classes
@@ -249,7 +249,7 @@ int main(int argc, char **argv) {
   }
   std::string inttemp_file = file_prefix;
   inttemp_file += "inttemp";
-  std::string pffmtable_file = file_prefix;
+  std::string pffmtable_file = std::move(file_prefix);
   pffmtable_file += "pffmtable";
   CLASS_STRUCT *float_classes = SetUpForFloat2Int(*unicharset, mf_classes);
   // Now write the inttemp and pffmtable.
@@ -269,5 +269,5 @@ int main(int argc, char **argv) {
       ;
     }
   }
-  return 0;
+  return EXIT_SUCCESS;
 } /* main */

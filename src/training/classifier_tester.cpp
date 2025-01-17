@@ -35,13 +35,13 @@ enum ClassifierName { CN_PRUNER, CN_FULL, CN_COUNT };
 
 static const char *names[] = {"pruner", "full"};
 
-static tesseract::ShapeClassifier *InitializeClassifier(const char *classifer_name,
+static tesseract::ShapeClassifier *InitializeClassifier(const char *classifier_name,
                                                         const UNICHARSET &unicharset, int argc,
                                                         char **argv, tesseract::TessBaseAPI **api) {
   // Decode the classifier string.
   ClassifierName classifier = CN_COUNT;
   for (int c = 0; c < CN_COUNT; ++c) {
-    if (strcmp(classifer_name, names[c]) == 0) {
+    if (strcmp(classifier_name, names[c]) == 0) {
       classifier = static_cast<ClassifierName>(c);
       break;
     }
@@ -75,7 +75,7 @@ static tesseract::ShapeClassifier *InitializeClassifier(const char *classifer_na
   } else if (classifier == CN_FULL) {
     shape_classifier = new tesseract::TessClassifier(false, classify);
   }
-  tprintf("Testing classifier %s:\n", classifer_name);
+  tprintf("Testing classifier %s:\n", classifier_name);
   return shape_classifier;
 }
 
@@ -109,7 +109,7 @@ int main(int argc, char **argv) {
       InitializeClassifier(FLAGS_classifier.c_str(), trainer->unicharset(), argc, argv, &api);
   if (shape_classifier == nullptr) {
     fprintf(stderr, "Classifier init failed!:%s\n", FLAGS_classifier.c_str());
-    return 1;
+    return EXIT_FAILURE;
   }
 
   // We want to test junk as well if it is available.
@@ -123,5 +123,5 @@ int main(int argc, char **argv) {
   delete shape_classifier;
   delete api;
 
-  return 0;
+  return EXIT_SUCCESS;
 } /* main */

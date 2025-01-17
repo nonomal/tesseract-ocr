@@ -41,6 +41,7 @@
 #endif
 
 #if defined(HAVE_AVX) || defined(HAVE_AVX2) || defined(HAVE_FMA) || defined(HAVE_SSE4_1)
+// See https://en.wikipedia.org/wiki/CPUID.
 #  define HAS_CPUID
 #endif
 
@@ -53,12 +54,20 @@
 #endif
 
 #if defined(HAVE_NEON) && !defined(__aarch64__)
-#  ifdef ANDROID
+#  if defined(HAVE_ANDROID_GETCPUFAMILY)
 #    include <cpu-features.h>
-#  else
-/* Assume linux */
+#  elif defined(HAVE_GETAUXVAL)
 #    include <asm/hwcap.h>
 #    include <sys/auxv.h>
+#  elif defined(HAVE_ELF_AUX_INFO)
+#    include <sys/auxv.h>
+#  endif
+#endif
+
+#if defined(HAVE_RVV)
+#  if defined(HAVE_GETAUXVAL) || defined(HAVE_ELF_AUX_INFO)
+#    include <sys/auxv.h>
+#    define HWCAP_RV(letter) (1ul << ((letter) - 'A'))
 #  endif
 #endif
 
@@ -86,12 +95,15 @@ bool SIMDDetect::neon_available_ = true;
 #elif defined(HAVE_NEON)
 // If true, then Neon has been detected.
 bool SIMDDetect::neon_available_;
+#elif defined(HAVE_RVV)
+bool SIMDDetect::rvv_available_;
 #else
 // If true, then AVX has been detected.
 bool SIMDDetect::avx_available_;
 bool SIMDDetect::avx2_available_;
 bool SIMDDetect::avx512F_available_;
 bool SIMDDetect::avx512BW_available_;
+bool SIMDDetect::avx512VNNI_available_;
 // If true, then FMA has been detected.
 bool SIMDDetect::fma_available_;
 // If true, then SSe4.1 has been detected.
@@ -169,6 +181,7 @@ SIMDDetect::SIMDDetect() {
         avx2_available_ = (ebx & 0x00000020) != 0;
         avx512F_available_ = (ebx & 0x00010000) != 0;
         avx512BW_available_ = (ebx & 0x40000000) != 0;
+        avx512VNNI_available_ = (ecx & 0x00000800) != 0;
       }
 #      endif
     }
@@ -199,6 +212,7 @@ SIMDDetect::SIMDDetect() {
         avx2_available_ = (cpuInfo[1] & 0x00000020) != 0;
         avx512F_available_ = (cpuInfo[1] & 0x00010000) != 0;
         avx512BW_available_ = (cpuInfo[1] & 0x40000000) != 0;
+        avx512VNNI_available_ = (cpuInfo[2] & 0x00000800) != 0;
       }
 #      endif
     }
@@ -210,15 +224,29 @@ SIMDDetect::SIMDDetect() {
 #endif
 
 #if defined(HAVE_NEON) && !defined(__aarch64__)
-#  ifdef ANDROID
+#  if defined(HAVE_ANDROID_GETCPUFAMILY)
   {
     AndroidCpuFamily family = android_getCpuFamily();
     if (family == ANDROID_CPU_FAMILY_ARM)
       neon_available_ = (android_getCpuFeatures() & ANDROID_CPU_ARM_FEATURE_NEON);
   }
-#  else
-  /* Assume linux */
+#  elif defined(HAVE_GETAUXVAL)
   neon_available_ = getauxval(AT_HWCAP) & HWCAP_NEON;
+#  elif defined(HAVE_ELF_AUX_INFO)
+  unsigned long hwcap = 0;
+  elf_aux_info(AT_HWCAP, &hwcap, sizeof hwcap);
+  neon_available_ = hwcap & HWCAP_NEON;
+#  endif
+#endif
+
+#if defined(HAVE_RVV)
+#  if defined(HAVE_GETAUXVAL)
+  const unsigned long hwcap = getauxval(AT_HWCAP);
+  rvv_available_ = hwcap & HWCAP_RV('V');
+#  elif defined(HAVE_ELF_AUX_INFO)
+  unsigned long hwcap = 0;
+  elf_aux_info(AT_HWCAP, &hwcap, sizeof hwcap);
+  rvv_available_ = hwcap & HWCAP_RV('V');
 #  endif
 #endif
 
@@ -249,6 +277,10 @@ SIMDDetect::SIMDDetect() {
   } else if (neon_available_) {
     // NEON detected.
     SetDotProduct(DotProductNEON, &IntSimdMatrix::intSimdMatrixNEON);
+#endif
+#if defined(HAVE_RVV)
+  } else if (rvv_available_) {
+    SetDotProduct(DotProductGeneric, &IntSimdMatrix::intSimdMatrixRVV);
 #endif
   }
 

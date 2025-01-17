@@ -38,15 +38,16 @@ INT_VAR(devanagari_split_debuglevel, 0, "Debug level for split shiro-rekha proce
 BOOL_VAR(devanagari_split_debugimage, 0,
          "Whether to create a debug image for split shiro-rekha process.");
 
-ShiroRekhaSplitter::ShiroRekhaSplitter() {
-  orig_pix_ = nullptr;
-  segmentation_block_list_ = nullptr;
-  splitted_image_ = nullptr;
-  global_xheight_ = kUnspecifiedXheight;
-  perform_close_ = false;
-  debug_image_ = nullptr;
-  pageseg_split_strategy_ = NO_SPLIT;
-  ocr_split_strategy_ = NO_SPLIT;
+ShiroRekhaSplitter::ShiroRekhaSplitter() :
+  orig_pix_(nullptr),
+  splitted_image_(nullptr),
+  pageseg_split_strategy_(NO_SPLIT),
+  ocr_split_strategy_(NO_SPLIT),
+  debug_image_(nullptr),
+  segmentation_block_list_(nullptr),
+  global_xheight_(kUnspecifiedXheight),
+  perform_close_(false)
+{
 }
 
 ShiroRekhaSplitter::~ShiroRekhaSplitter() {
@@ -199,7 +200,7 @@ int ShiroRekhaSplitter::GetXheightForCC(Box *cc_bbox) {
       int baseline = static_cast<int>(row->base_line(box_middle) + 0.5);
       TBOX test_box(box_middle - row->x_height() / 2, baseline, box_middle + row->x_height() / 2,
                     static_cast<int>(baseline + row->x_height()));
-      // Compute overlap. If it is is a major overlap, this is the right row.
+      // Compute overlap. If it is a major overlap, this is the right row.
       if (bbox.major_overlap(test_box)) {
         return row->x_height();
       }

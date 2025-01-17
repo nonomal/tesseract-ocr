@@ -43,7 +43,7 @@ const double kMaxPerimeterWidthRatio = 8.0;
  **********************************************************************/
 static void position_outline( // put in place
     C_OUTLINE *outline,       // thing to place
-    C_OUTLINE_LIST *destlist  // desstination list
+    C_OUTLINE_LIST *destlist  // destination list
 ) {
   C_OUTLINE_IT it = destlist; // iterator
                               // iterator on children
@@ -314,7 +314,7 @@ int32_t C_BLOB::outer_area() { // area
  * C_BLOB::count_transitions
  *
  * Return the total x and y maxes and mins in the blob.
- * Chlid outlines are not counted.
+ * Child outlines are not counted.
  **********************************************************************/
 
 int32_t C_BLOB::count_transitions( // area

@@ -322,7 +322,7 @@ void RecodeBeamSearch::ExtractBestPathAsWords(const TBOX &line_box,
 }
 
 struct greater_than {
-  inline bool operator()(const RecodeNode *&node1, const RecodeNode *&node2) {
+  inline bool operator()(const RecodeNode *&node1, const RecodeNode *&node2) const {
     return (node1->score > node2->score);
   }
 };
@@ -341,7 +341,7 @@ void RecodeBeamSearch::PrintBeam2(bool uids, int num_outputs,
   // fill the topology with depths first
   for (int step = beam.size() - 1; step >= 0; --step) {
     std::vector<tesseract::RecodePair> &heaps = beam.at(step)->beams_->heap();
-    for (auto node : heaps) {
+    for (auto &&node : heaps) {
       int backtracker = 0;
       const RecodeNode *curr = &node.data();
       while (curr != nullptr && !visited.count(curr)) {
@@ -426,7 +426,7 @@ void RecodeBeamSearch::extractSymbolChoices(const UNICHARSET *unicharset) {
     std::vector<const RecodeNode *> best_nodes;
     std::vector<const RecodeNode *> best;
     // Scan the segmented node chain for valid unichar ids.
-    for (auto entry : heaps) {
+    for (auto &&entry : heaps) {
       bool validChar = false;
       int backcounter = 0;
       const RecodeNode *node = &entry.data();
@@ -898,15 +898,13 @@ void RecodeBeamSearch::ContinueContext(
   int length = LengthFromBeamsIndex(index);
   bool use_dawgs = IsDawgFromBeamsIndex(index);
   NodeContinuation prev_cont = ContinuationFromBeamsIndex(index);
-  for (int p = length - 1; p >= 0; --p, previous = previous->prev) {
-    while (previous != nullptr &&
-           (previous->duplicate || previous->code == null_char_)) {
+  for (int p = length - 1; p >= 0 && previous != nullptr; --p) {
+    while (previous->duplicate || previous->code == null_char_) {
       previous = previous->prev;
     }
-    if (previous != nullptr) {
-      prefix.Set(p, previous->code);
-      full_code.Set(p, previous->code);
-    }
+    prefix.Set(p, previous->code);
+    full_code.Set(p, previous->code);
+    previous = previous->prev;
   }
   if (prev != nullptr && !is_simple_text_) {
     if (top_n_flags_[prev->code] == top_n_flag) {

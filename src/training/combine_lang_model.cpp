@@ -19,6 +19,7 @@
 #include "commandlineflags.h"
 #include "commontraining.h" // CheckSharedLibraryVersion
 #include "lang_model_helpers.h"
+#include "tesserrstream.h"  // for tesserr
 #include "tprintf.h"
 #include "unicharset_training_utils.h"
 
@@ -58,10 +59,10 @@ int main(int argc, char **argv) {
   UNICHARSET unicharset;
   if (!unicharset.load_from_file(FLAGS_input_unicharset.c_str(), false)) {
     tprintf("Failed to load unicharset from %s\n", FLAGS_input_unicharset.c_str());
-    return 1;
+    return EXIT_FAILURE;
   }
-  tprintf("Loaded unicharset of size %zu from file %s\n", unicharset.size(),
-          FLAGS_input_unicharset.c_str());
+  tesserr << "Loaded unicharset of size " << unicharset.size()
+          << " from file " << FLAGS_input_unicharset.c_str() << '\n';
 
   // Set unichar properties
   tprintf("Setting unichar properties\n");

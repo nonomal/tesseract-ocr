@@ -123,7 +123,7 @@ StrokeWidth::StrokeWidth(int gridsize, const ICOORD &bleft, const ICOORD &tright
 StrokeWidth::~StrokeWidth() {
 #ifndef GRAPHICS_DISABLED
   if (widths_win_ != nullptr) {
-    delete widths_win_->AwaitEvent(SVET_DESTROY);
+    widths_win_->AwaitEvent(SVET_DESTROY);
     if (textord_tabfind_only_strokewidths) {
       exit(0);
     }
@@ -1581,7 +1581,7 @@ bool StrokeWidth::DiacriticBlob(BlobGrid *small_grid, BLOBNBOX *blob) {
   // Setup a rectangle search to find its nearest base-character neighbour.
   // We keep 2 different best candidates:
   // best_x_overlap is a category of base characters that have an overlap in x
-  // (like a acute) in which we look for the least y-gap, computed using the
+  // (like an acute) in which we look for the least y-gap, computed using the
   // projection to favor base characters in the same textline.
   // best_y_overlap is a category of base characters that have no x overlap,
   // (nominally a y-overlap is preferrecd but not essential) in which we

@@ -116,7 +116,9 @@ int main(int argc, char *argv[]) {
   InitFeatureDefs(&FeatureDefs);
 
   ParseArguments(&argc, &argv);
+#if !defined(NDEBUG)
   int num_fonts = 0;
+#endif
   for (const char *PageName = *++argv; PageName != nullptr; PageName = *++argv) {
     printf("Reading %s ...\n", PageName);
     FILE *TrainingPage = fopen(PageName, "rb");
@@ -124,7 +126,9 @@ int main(int argc, char *argv[]) {
     if (TrainingPage) {
       ReadTrainingSamples(FeatureDefs, PROGRAM_FEATURE_TYPE, 100, nullptr, TrainingPage, &CharList);
       fclose(TrainingPage);
+#if !defined(NDEBUG)
       ++num_fonts;
+#endif
     }
   }
   printf("Clustering ...\n");
@@ -141,7 +145,7 @@ int main(int argc, char *argv[]) {
     Clusterer = SetUpForClustering(FeatureDefs, CharSample, PROGRAM_FEATURE_TYPE);
     if (Clusterer == nullptr) { // To avoid a SIGSEGV
       fprintf(stderr, "Error: nullptr clusterer!\n");
-      return 1;
+      return EXIT_FAILURE;
     }
     float SavedMinSamples = Config.MinSamples;
     // To disable the tendency to produce a single cluster for all fonts,
@@ -173,7 +177,7 @@ int main(int argc, char *argv[]) {
     FreeProtoList(&freeable_proto);
   }
   printf("\n");
-  return 0;
+  return EXIT_SUCCESS;
 } // main
 
 /*----------------------------------------------------------------------------

@@ -7,7 +7,7 @@
 # ----------------------------------------
 AC_PREREQ([2.69])
 AC_INIT([tesseract],
-        [m4_esyscmd_s([git describe --abbrev=4 2>/dev/null || cat VERSION])],
+        [m4_esyscmd_s([test -d .git && git describe --abbrev=4 2>/dev/null || cat VERSION])],
         [https://github.com/tesseract-ocr/tesseract/issues],,
         [https://github.com/tesseract-ocr/tesseract/])
 
@@ -28,8 +28,8 @@ AM_INIT_AUTOMAKE([foreign subdir-objects nostdinc])
 
 # Define date of package, etc. Could be useful in auto-generated
 # documentation.
-PACKAGE_YEAR=2022
-PACKAGE_DATE="03/01"
+PACKAGE_YEAR=2024
+PACKAGE_DATE="11/10"
 
 abs_top_srcdir=`AS_DIRNAME([$0])`
 
@@ -72,6 +72,7 @@ AC_CONFIG_HEADERS([include/config_auto.h:config/config.h.in])
 
 # default conditional
 AM_CONDITIONAL([T_WIN], false)
+AM_CONDITIONAL([MINGW], false)
 AM_CONDITIONAL([GRAPHICS_DISABLED], false)
 AC_SUBST([AM_CPPFLAGS])
 
@@ -79,8 +80,6 @@ AC_SUBST([AM_CPPFLAGS])
 # Can be overridden with `configure --disable-silent-rules` or with `make V=1`.
 AM_SILENT_RULES([yes])
 
-OPENCL_INC="/opt/AMDAPP/include"
-OPENCL_LIBS="-lOpenCL"
 #############################
 #
 # Platform specific setup
@@ -89,7 +88,9 @@ OPENCL_LIBS="-lOpenCL"
 AC_CANONICAL_HOST
 case "${host_os}" in
     mingw*)
+        AC_DEFINE_UNQUOTED([MINGW], 1, [This is a MinGW system])
         AM_CONDITIONAL([T_WIN], true)
+        AM_CONDITIONAL([MINGW], true)
         AM_CONDITIONAL([ADD_RT], false)
         AC_SUBST([AM_LDFLAGS], ['-no-undefined'])
         ;;
@@ -102,15 +103,12 @@ case "${host_os}" in
         AM_CONDITIONAL([ADD_RT], true)
         ;;
     *darwin*)
-        OPENCL_LIBS=""
-        OPENCL_INC=""
         AM_CONDITIONAL([ADD_RT], false)
         ;;
     *android*|openbsd*)
         AM_CONDITIONAL([ADD_RT], false)
         ;;
     powerpc-*-darwin*)
-        OPENCL_LIBS=""
         ;;
     *)
         # default
@@ -133,10 +131,11 @@ AM_CONDITIONAL([HAVE_AVX512F], false)
 AM_CONDITIONAL([HAVE_FMA], false)
 AM_CONDITIONAL([HAVE_SSE4_1], false)
 AM_CONDITIONAL([HAVE_NEON], false)
+AM_CONDITIONAL([HAVE_RVV], false)
 
 case "${host_cpu}" in
 
-  *86*)
+  amd64|*86*)
 
     AX_CHECK_COMPILE_FLAG([-mavx], [avx=true], [avx=false], [$WERROR])
     AM_CONDITIONAL([HAVE_AVX], ${avx})
@@ -170,7 +169,7 @@ case "${host_cpu}" in
 
     ;;
 
-  aarch64)
+  aarch64*|arm64)
 
     # ARMv8 always has NEON and does not need special compiler flags.
     AM_CONDITIONAL([HAVE_NEON], true)
@@ -185,8 +184,19 @@ case "${host_cpu}" in
       AC_DEFINE([HAVE_NEON], [1], [Enable NEON instructions])
       NEON_CXXFLAGS="-mfpu=neon"
       AC_SUBST([NEON_CXXFLAGS])
+      check_for_neon=1
     fi
 
+    ;;
+
+  riscv*)
+
+    AX_CHECK_COMPILE_FLAG([-march=rv64gcv], [rvv=true], [rvv=false], [$WERROR])
+    AM_CONDITIONAL([HAVE_RVV], [$rvv])
+    if $rvv; then
+      AC_DEFINE([HAVE_RVV], [1], [Enable RVV instructions])
+      check_for_rvv=1
+    fi
     ;;
 
   *)
@@ -197,6 +207,26 @@ esac
 
 # check whether feenableexcept is supported. some C libraries (e.g. uclibc) don't.
 AC_CHECK_FUNCS([feenableexcept])
+
+# additional checks for NEON targets
+if test x$check_for_neon = x1; then
+  AC_MSG_NOTICE([checking how to detect NEON availability])
+  AC_CHECK_FUNCS([getauxval elf_aux_info android_getCpuFamily])
+
+  if test $ac_cv_func_getauxval = no && test $ac_cv_func_elf_aux_info = no && test $ac_cv_func_android_getCpuFamily = no; then
+      AC_MSG_WARN([NEON is available, but we don't know how to check for it.  Will not be able to use NEON.])
+  fi
+fi
+
+# additional checks for RVV targets
+if test x$check_for_rvv = x1; then
+  AC_MSG_NOTICE([checking how to detect RVV availability])
+  AC_CHECK_FUNCS([getauxval elf_aux_info])
+
+  if test $ac_cv_func_getauxval = no && test $ac_cv_func_elf_aux_info = no; then
+      AC_MSG_WARN([RVV is available, but we don't know how to check for it.  Will not be able to use RVV.])
+  fi
+fi
 
 AX_CHECK_COMPILE_FLAG([-fopenmp-simd], [openmp_simd=true], [openmp_simd=false], [$WERROR])
 AM_CONDITIONAL([OPENMP_SIMD], $openmp_simd)
@@ -252,19 +282,6 @@ have_tiff=false
 # Note that the first usage of AC_CHECK_HEADERS must be unconditional.
 AC_CHECK_HEADERS([tiffio.h], [have_tiff=true], [have_tiff=false])
 
-# check whether to build opencl version
-AC_MSG_CHECKING([--enable-opencl argument])
-AC_ARG_ENABLE([opencl],
-    AS_HELP_STRING([--enable-opencl], [enable opencl build [default=no]]))
-AC_MSG_RESULT([$enable_opencl])
-# check for opencl header
-have_opencl=false
-if test "$enable_opencl" = "yes"; then
-  AC_CHECK_HEADERS([CL/cl.h], [have_opencl=true], [
-    AC_CHECK_HEADERS(OpenCL/cl.h, [have_opencl=true], [have_opencl=false])
-  ])
-fi
-
 # Configure arguments which allow disabling some optional libraries.
 AC_ARG_WITH([archive],
             AS_HELP_STRING([--with-archive],
@@ -274,25 +291,6 @@ AC_ARG_WITH([curl],
             AS_HELP_STRING([--with-curl],
                            [Build with libcurl which supports processing an image URL @<:@default=check@:>@]),
             [], [with_curl=check])
-AC_ARG_WITH([tensorflow],
-  AS_HELP_STRING([--with-tensorflow],
-                 [support TensorFlow @<:@default=check@:>@]),
-  [], [with_tensorflow=check])
-
-# Check whether to build with support for TensorFlow.
-AM_CONDITIONAL([TENSORFLOW], false)
-TENSORFLOW_LIBS=
-AS_IF([test "x$with_tensorflow" != xno],
-  [AC_CHECK_HEADERS([tensorflow/core/framework/graph.pb.h],
-    [AC_SUBST([TENSORFLOW_LIBS], ["-lprotobuf -ltensorflow_cc"])
-      AM_CONDITIONAL([TENSORFLOW], true)
-    ],
-    [if test "x$with_tensorflow" != xcheck; then
-      AC_MSG_FAILURE(
-        [--with-tensorflow was given, but test for libtensorflow-dev failed])
-     fi
-    ])
-  ])
 
 # https://lists.apple.com/archives/unix-porting/2009/Jan/msg00026.html
 m4_define([MY_CHECK_FRAMEWORK],
@@ -312,9 +310,6 @@ m4_define([MY_CHECK_FRAMEWORK],
    fi]
 )
 
-have_opencl_lib=false
-OPENCL_CPPFLAGS=''
-OPENCL_LDFLAGS=''
 case "${host_os}" in
   *darwin* | *-macos10*)
     MY_CHECK_FRAMEWORK([Accelerate])
@@ -322,36 +317,11 @@ case "${host_os}" in
       AM_CPPFLAGS="-DHAVE_FRAMEWORK_ACCELERATE $AM_CPPFLAGS"
       AM_LDFLAGS="$AM_LDFLAGS -framework Accelerate"
     fi
-    MY_CHECK_FRAMEWORK([OpenCL])
-    if test "$enable_opencl" = "yes"; then
-      if test $my_cv_framework_OpenCL = no; then
-        AC_MSG_ERROR([Required OpenCL library not found!])
-      fi
-      AM_CPPFLAGS="-DUSE_OPENCL $AM_CPPFLAGS"
-      OPENCL_CPPFLAGS=""
-      OPENCL_LDFLAGS="-framework OpenCL"
-    fi
     ;;
   *)
     # default
-    if test "$enable_opencl" = "yes"; then
-        AC_CHECK_LIB([OpenCL], [clGetPlatformIDs],
-                     [have_opencl_lib=true], [have_opencl_lib=false])
-        if !($have_opencl); then
-            AC_MSG_ERROR([Required OpenCL headers not found!])
-        fi
-        if !($have_opencl_lib); then
-            AC_MSG_ERROR([Required OpenCL library not found!])
-        fi
-        AM_CPPFLAGS="-DUSE_OPENCL $AM_CPPFLAGS"
-        OPENCL_CPPFLAGS="-I${OPENCL_INC}"
-        OPENCL_LDFLAGS="${OPENCL_LIBS}"
-    fi
     ;;
 esac
-AM_CONDITIONAL([OPENCL], [test "$enable_opencl" = "yes"])
-AC_SUBST([OPENCL_CPPFLAGS])
-AC_SUBST([OPENCL_LDFLAGS])
 
 # check whether to build tesseract with -fvisibility=hidden -fvisibility-inlines-hidden
 # http://gcc.gnu.org/wiki/Visibility
@@ -453,7 +423,7 @@ esac
 
 AC_SEARCH_LIBS([pthread_create], [pthread])
 
-# Set PKG_CONFIG_PATH for MacOS with Homebrew unless it is already set.
+# Set PKG_CONFIG_PATH for macOS with Homebrew unless it is already set.
 AC_CHECK_PROG([have_brew], brew, true, false)
 if $have_brew; then
   brew_prefix=$(brew --prefix)
@@ -476,7 +446,7 @@ AC_ARG_ENABLE([doc],
 AS_IF([test "$enable_doc" != "no"], [
   AC_CHECK_PROG([have_asciidoc], asciidoc, true, false)
   AC_CHECK_PROG([have_xsltproc], xsltproc, true, false)
-  # MacOS with Homebrew requires the environment variable
+  # macOS with Homebrew requires the environment variable
   # XML_CATALOG_FILES for xsltproc.
   if $have_asciidoc && $have_xsltproc; then
     AM_CONDITIONAL([ASCIIDOC], true)
@@ -594,6 +564,7 @@ AC_CONFIG_FILES([java/com/google/Makefile])
 AC_CONFIG_FILES([java/com/google/scrollview/Makefile])
 AC_CONFIG_FILES([java/com/google/scrollview/events/Makefile])
 AC_CONFIG_FILES([java/com/google/scrollview/ui/Makefile])
+AC_CONFIG_FILES([nsis/Makefile])
 AC_OUTPUT
 
 # Final message
@@ -629,7 +600,7 @@ AM_COND_IF([ENABLE_TRAINING],
    echo "$ sudo make training-install"
    echo ""],
   [
-   echo "You can not build training tools because of missing dependency."
+   echo "You cannot build training tools because of missing dependency."
    echo "Check configure output for details."
    echo ""]
 )

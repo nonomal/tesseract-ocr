@@ -1,3 +1,132 @@
+2024-11-10 - V5.5.0
+* Set hOCR capabilities ocrp_dir and ocrp_lang unconditionally.
+* Calculate row bounding box in single-word mode per (issue #4304).
+* Reduce clock syscalls (#4303).
+* Several small performance and other code fixes.
+* Modernized code.
+* Print time for tessedit_timing_debug in milliseconds.
+* Print time for ErrorCounter::ComputeErrorRate in milliseconds.
+* cmake: Correctly set the soversion based on SemVer properties.
+* Do not export PDBs for static libraries (issue #4279).
+* Several other small fixes and improvements for builds and CI.
+* Modernize code for renderers and remove filename conversion for Windows (#4330).
+* Add build rule for Windows installer.
+* Support symbolic values for --oem and --psm options.
+* Remove Tensorflow support.
+* Add RISC-V V support (#4346).
+* Remove broken GitHub action msys2-4.1.1.
+
+2024-06-11 - V5.4.1
+* Avoid FP overflow in NormEvidenceOf (fixes issue #4257) (#4259)
+* Small build fixes and code improvements (#4262, #4263, #4266, #4267)
+
+2024-06-06 - V5.4.0
+* Small build fixes and code improvements
+  (#4241, #4243, #4244, #4245, #4246, #4248, #4249, #4250, #4253)
+
+2024-05-19 - V5.4.0-rc2
+* Fix setup of datadir on installations with Conda (issue #4230) (#4240)
+* Fix FP exception in Wordrec::angle_change (issue #4242) (#4243)
+
+2024-05-12 - V5.4.0-rc1
+* Build fixes, code refactoring and other smaller changes.
+* Fix grey result of indexed PNG in pdfrenderer.
+* Rename frk -> deu_latf (ISO 639-3, ISO 15924).
+* Remove broken Dockerfile.
+* Fixes for several issues reported by Coverity Scan.
+* Remove unsupported OpenCL code and related API functions (#4220).
+* Facilitate vectorization for generic build (#4223).
+* Add PAGE XML renderer / export (#4214).
+* Support training without lstmf files.
+* Improve CCUtil::main_setup (fixes issue #4230 related to Coda).
+* Allow for text angle/gradient to be retrieved (#4070).
+
+2024-01-18 - V5.3.4
+* Fixes for scrollview
+* Fixes for autoconf, clang and sw builds
+* Improve OCR for an image URL
+  * Fail on curl download errors
+  * New parameter curl_cookiefile
+  * Set User-Agent: header field in HTTP request for curl downloads
+* Output directory list from "combine_tessdata -d" to stdout
+* Other small improvements for code and documentation.
+
+2023-10-05 - V5.3.3
+* Small code fixes and improvements to fix Coverity Scan issues.
+* Disable -mfpu=neon for aarch64.
+* Fix build without git clone in cloned directory (required for FreeBSD).
+* Other build fixes for autotools, cmake and sw.
+* Fix regression in layout detection which was introduced in release 5.0.0.
+* Fix regression which prevented loading of submodels, introduced in release 5.0.0-rc2.
+* Other small improvements for code and documentation.
+
+2023-07-11 - V5.3.2
+* Updates for snap package building.
+* Support for Sgaw and W Pwo Karen languages in the Myanmar validator (#4065).
+* Improve format of logging from lstmtraining.
+* Use less digits in filenames of checkpoints written by lstmtraining.
+* Replace deprecated sprintf.
+* Remove unused code in function fix_rep_char.
+* Avoid 32 bit overflow in multiplication (fixes 3 CodeQL CI alerts).
+* Avoid conversions from std::string to char* to std::string.
+* Abort with error message if OSD is requested with LSTM-only model.
+* cmake: allow to disable tiff (-DDISABLE_TIFF=ON).
+* cmake: provide info about disabled LibArchive and CURL.
+* cmake: check if leptonica was build with tiff support.
+* Remove old broken GitHub action vcpkg-4.1.1 (fixes issue #4078).
+* Create config.yml.
+* Fix typos.
+
+2023-04-01 - V5.3.1
+ * Bug fixes for some special scenarios:
+   * Fix issue #4010.
+   * textord: Catch empty rows in block iterator (fixes #4039).
+   * Fix FP division by zero (issue #3995).
+ * Improve documentation and log messages.
+ * Build fixes and improvements (mainly for cmake).
+
+2022-12-22 - V5.3.0
+ * Minor updates for documentation and cmake builds.
+
+2022-12-13 - V5.3.0-rc1
+ * Fix the training tools for the legacy OCR engine (fix issue #3925).
+ * PDF renderer: Ignore non-text blocks (fix issue #3957).
+ * Remove colormap before thresholding (fix issue #3940).
+ * Fix a number of performance issues reported by Coverity Scan.
+ * Training tools: Replace call of exit function by return statement in main function.
+ * Fix double free in function vigorous_noise_removal (fix issue #3876).
+ * Create to_win if needed in Textord::make_spline_rows (fix issue #3875).
+ * Bug fixes for ScrollView viewer:
+   * Fix memory issues in ScrollView::MessageReceiver.
+   * Catch potential nullptr in SVNetwork::SVNetwork.
+   * Move svpaint.cpp from src/viewer to src/.
+   * Add rule for svpaint executable in Autotools.
+ * Bug fixes and improvements for build tools:
+   * Fix AMD64 detection with autobuild on FreeBSD (fix issue #3964).
+   * Fix tesseract.pc generated from CMake to match Autotools.
+   * Detect availability of AVX512-VNNI.
+   * configure.ac: fix build on aarch64_be.
+ * Drop CI for old versions of macOS and Ubuntu.
+
+2022-07-06 - V5.2.0
+  * Improvements and fixes for continuous integration,
+    autoconf and cmake builds.
+  * Set /Os for some 32 bit MS compilers (fixes #3769).
+  * Improve comments and other documentation.
+  * Add initial support for Intel AVX512F.
+  * Fix for very large PDF files on 32 bit hosts (fixes #3805).
+  * Fix NEON detection on FreeBSD.
+  * Fix regression with UZN files (fixes #3837).
+  * Fix calling delete[] for memory allocated by malloc in C API.
+  * Add an API function to init tesseract with traineddata from memory
+    (fixes #3691).
+  * Replace direct access to Leptonica internal data structures by
+    function calls and support latest releases of Leptonica.
+  * Replace std::regex by std::string functions (fixes issue #3830).
+  * Use compiled-in TESSDATA_PREFIX also on Windows (fixes #3767).
+  * Add new parameter 'invert_threshold', change the default threshold
+    from 0.5 to 0.7 and mark parameter 'tessedit_do_invert' as deprecated.
+
 2022-03-01 - V5.1.0
   * Handle image and line regions in output formats ALTO, hOCR and text.
   * New parameter curl_timeout for curl_easy_setop.
@@ -197,10 +326,10 @@
   * Many other fixes, including the way in which the chopper finds chops and messes with the outline while it does so.
 
 2010-11-29 - V3.01
-  * Removed old/dead serialise/deserialze methods on *LISTIZED classes.
+  * Removed old/dead serialise/deserialize methods on *LISTIZED classes.
   * Total rewrite of DENORM to better encapsulate operation and make
     for potential to extract features from images.
-  * Thread-safety! Moved all critical globals and statics to members of the appropriate class. Tesseract is now thread-safe (multiple instances can be used in parallel in multiple threads.) with the minor exception that some control parameters are still global and affect all threads.
+  * Thread-safety! Moved all critical global and static variables to members of the appropriate class. Tesseract is now thread-safe (multiple instances can be used in parallel in multiple threads.) with the minor exception that some control parameters are still global and affect all threads.
   * Added Cube, a new recognizer for Arabic. Cube can also be used in combination with normal Tesseract for other languages with an improvement in accuracy at the cost of (much) lower speed. *There is no training module for Cube yet.*
   * `OcrEngineMode` in `Init` replaces `AccuracyVSpeed` to control cube.
   * Greatly improved segmentation search with consequent accuracy and speed improvements, especially for Chinese.

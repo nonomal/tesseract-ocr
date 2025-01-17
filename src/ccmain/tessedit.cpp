@@ -23,8 +23,6 @@
 #  include "config_auto.h"
 #endif
 
-#include <regex> // for std::regex_match
-
 #include "control.h"
 #include "matchdefs.h"
 #include "pageres.h"
@@ -248,12 +246,11 @@ void Tesseract::ParseLanguageString(const std::string &lang_str, std::vector<std
   std::string remains(lang_str);
   // Look whether the model file uses a prefix which must be applied to
   // included model files as well.
-  std::regex e("(.*)/[^/]*");
-  std::cmatch cm;
   std::string prefix;
-  if (std::regex_match(lang.c_str(), cm, e, std::regex_constants::match_default)) {
+  size_t found = lang.find_last_of('/');
+  if (found != std::string::npos) {
     // A prefix was found.
-    prefix = cm[1].str() + "/";
+    prefix = lang.substr(0, found + 1);
   }
   while (!remains.empty()) {
     // Find the start of the lang code and which vector to add to.
@@ -275,7 +272,7 @@ void Tesseract::ParseLanguageString(const std::string &lang_str, std::vector<std
     std::string lang_code(start);
     lang_code.resize(end);
     std::string next(start + end);
-    remains = next;
+    remains = std::move(next);
     lang_code = prefix + lang_code;
     // Check whether lang_code is already in the target vector and add.
     if (!IsStrInList(lang_code, *target)) {
@@ -309,9 +306,10 @@ int Tesseract::init_tesseract(const std::string &arg0, const std::string &textba
   // Add any languages that this language requires
   bool loaded_primary = false;
   // Load the rest into sub_langs_.
-  // A range based for loop does not work here because langs_to_load
+  // WARNING: A range based for loop does not work here because langs_to_load
   // might be changed in the loop when a new submodel is found.
-  for (auto &lang_to_load : langs_to_load) {
+  for (size_t lang_index = 0; lang_index < langs_to_load.size(); ++lang_index) {
+    auto &lang_to_load = langs_to_load[lang_index];
     if (!IsStrInList(lang_to_load, langs_not_to_load)) {
       const char *lang_str = lang_to_load.c_str();
       Tesseract *tess_to_init;

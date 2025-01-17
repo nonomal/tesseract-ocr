@@ -34,10 +34,10 @@
 
 #ifndef __GNUC__
 #  ifdef _WIN32
-#    define NO_EDGE (int64_t)0xffffffffffffffffi64
+#    define NO_EDGE static_cast<int64_t>(0xffffffffffffffffi64)
 #  endif /*_WIN32*/
 #else
-#  define NO_EDGE (int64_t)0xffffffffffffffffll
+#  define NO_EDGE static_cast<int64_t>(0xffffffffffffffffll)
 #endif /*__GNUC__*/
 
 namespace tesseract {
@@ -74,12 +74,12 @@ enum DawgType {
               C o n s t a n t s
 ----------------------------------------------------------------------*/
 
-#define FORWARD_EDGE (int32_t)0
-#define BACKWARD_EDGE (int32_t)1
-#define MAX_NODE_EDGES_DISPLAY (int64_t)100
-#define MARKER_FLAG (int64_t)1
-#define DIRECTION_FLAG (int64_t)2
-#define WERD_END_FLAG (int64_t)4
+#define FORWARD_EDGE static_cast<int32_t>(0)
+#define BACKWARD_EDGE static_cast<int32_t>(1)
+#define MAX_NODE_EDGES_DISPLAY static_cast<int64_t>(100)
+#define MARKER_FLAG static_cast<int64_t>(1)
+#define DIRECTION_FLAG static_cast<int64_t>(2)
+#define WERD_END_FLAG static_cast<int64_t>(4)
 #define LETTER_START_BIT 0
 #define NUM_FLAG_BITS 3
 #define REFFORMAT "%" PRId64
@@ -110,9 +110,9 @@ static const char kWildcard[] = "*";
 class TESS_API Dawg {
 public:
   /// Magic number to determine endianness when reading the Dawg from file.
-  static const int16_t kDawgMagicNumber = 42;
+  static constexpr int16_t kDawgMagicNumber = 42;
   /// A special unichar id that indicates that any appropriate pattern
-  /// (e.g.dicitonary word, 0-9 digit, etc) can be inserted instead
+  /// (e.g.dictionary word, 0-9 digit, etc) can be inserted instead
   /// Used for expressing patterns in punctuation and number Dawgs.
   static const UNICHAR_ID kPatternUnicharID = 0;
 
@@ -361,7 +361,7 @@ struct DawgPosition {
         dawg_index(dawg_idx),
         punc_index(punc_idx),
         back_to_punc(backtopunc) {}
-  bool operator==(const DawgPosition &other) {
+  bool operator==(const DawgPosition &other) const {
     return dawg_index == other.dawg_index && dawg_ref == other.dawg_ref &&
            punc_index == other.punc_index && punc_ref == other.punc_ref &&
            back_to_punc == other.back_to_punc;
@@ -382,7 +382,7 @@ public:
   /// true otherwise.
   inline bool add_unique(const DawgPosition &new_pos, bool debug,
                          const char *debug_msg) {
-    for (auto position : *this) {
+    for (auto &&position : *this) {
       if (position == new_pos) {
         return false;
       }
@@ -400,7 +400,7 @@ public:
 //
 /// Concrete class that can operate on a compacted (squished) Dawg (read,
 /// search and write to file). This class is read-only in the sense that
-/// new words can not be added to an instance of SquishedDawg.
+/// new words cannot be added to an instance of SquishedDawg.
 /// The underlying representation of the nodes and edges in SquishedDawg
 /// is stored as a contiguous EDGE_ARRAY (read from file or given as an
 /// argument to the constructor).

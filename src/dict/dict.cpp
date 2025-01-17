@@ -18,6 +18,7 @@
 
 #include "dict.h"
 
+#include "tesserrstream.h"  // for tesserr
 #include "tprintf.h"
 
 #include <cstdio>
@@ -114,7 +115,7 @@ Dict::Dict(CCUtil *ccutil)
                     " for each dict char above small word size.",
                     getCCUtil()->params())
     , double_MEMBER(stopper_allowable_character_badness, 3.0,
-                    "Max certaintly variation allowed in a word (in sigma)", getCCUtil()->params())
+                    "Max certainty variation allowed in a word (in sigma)", getCCUtil()->params())
     , INT_MEMBER(stopper_debug_level, 0, "Stopper debug level", getCCUtil()->params())
     , BOOL_MEMBER(stopper_no_acceptable_choices, false,
                   "Make AcceptableChoice() always return false. Useful"
@@ -171,7 +172,7 @@ Dict::~Dict() {
 
 DawgCache *Dict::GlobalDawgCache() {
   // This global cache (a singleton) will outlive every Tesseract instance
-  // (even those that someone else might declare as global statics).
+  // (even those that someone else might declare as global static variables).
   static DawgCache cache;
   return &cache;
 }
@@ -410,10 +411,10 @@ int Dict::def_letter_is_okay(void *void_dawg_args, const UNICHARSET &unicharset,
   ASSERT_HOST(unicharset.contains_unichar_id(unichar_id));
 
   if (dawg_debug_level >= 3) {
-    tprintf(
-        "def_letter_is_okay: current unichar=%s word_end=%d"
-        " num active dawgs=%zu\n",
-        getUnicharset().debug_str(unichar_id).c_str(), word_end, dawg_args->active_dawgs->size());
+    tesserr << "def_letter_is_okay: current unichar="
+            << getUnicharset().debug_str(unichar_id)
+            << " word_end=" << word_end
+            << " num active dawgs=" << dawg_args->active_dawgs->size() << '\n';
   }
 
   // Do not accept words that contain kPatternUnicharID.
@@ -886,7 +887,7 @@ bool Dict::valid_punctuation(const WERD_CHOICE &word) {
   }
   WERD_CHOICE new_word(word.unicharset());
   auto last_index = word.length() - 1;
-  int new_len = 0;
+  int new_len;
   for (unsigned i = 0; i <= last_index; ++i) {
     UNICHAR_ID unichar_id = (word.unichar_id(i));
     if (getUnicharset().get_ispunctuation(unichar_id)) {

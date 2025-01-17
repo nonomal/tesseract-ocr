@@ -129,7 +129,7 @@ bool WriteRecoder(const UNICHARSET &unicharset, bool pass_through, const std::st
   std::string suffix;
   suffix += ".charset_size=" + std::to_string(recoder.code_range());
   suffix += ".txt";
-  return WriteFile(output_dir, lang, suffix.c_str(), recoder_data, writer);
+  return WriteFile(output_dir, lang, suffix, recoder_data, writer);
 }
 
 // Helper builds a dawg from the given words, using the unicharset as coding,
@@ -239,6 +239,7 @@ int CombineLangModel(const UNICHARSET &unicharset, const std::string &script_dir
     tprintf("Error writing output traineddata file!!\n");
     return EXIT_FAILURE;
   }
+  tprintf("Created %s/%s/%s.traineddata", output_dir.c_str(), lang.c_str(), lang.c_str());
   return EXIT_SUCCESS;
 }
 

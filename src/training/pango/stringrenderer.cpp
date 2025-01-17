@@ -85,7 +85,7 @@ static Image CairoARGB32ToPixFormat(cairo_surface_t *surface) {
   int byte_stride = cairo_image_surface_get_stride(surface);
 
   for (int i = 0; i < height; ++i) {
-    memcpy(reinterpret_cast<unsigned char *>(pix->data + i * pix->wpl) + 1,
+    memcpy(reinterpret_cast<unsigned char *>(pixGetData(pix) + i * pixGetWpl(pix)) + 1,
            cairo_image_surface_get_data(surface) + i * byte_stride,
            byte_stride - ((i == height - 1) ? 1 : 0));
   }
@@ -386,7 +386,7 @@ bool StringRenderer::GetClusterStrings(std::vector<std::string> *cluster_text) {
         // decided to use an unmapped glyph.
         text = LigatureTable::Get()->AddLigatures(text, nullptr);
       }
-      start_byte_to_text[start_byte_index] = text;
+      start_byte_to_text[start_byte_index] = std::move(text);
     }
   } while (pango_layout_iter_next_run(run_iter));
   pango_layout_iter_free(run_iter);
@@ -609,6 +609,7 @@ void StringRenderer::CorrectBoxPositionsToLayout(std::vector<BoxChar *> *boxchar
 
 int StringRenderer::StripUnrenderableWords(std::string *utf8_text) const {
   std::string output_text;
+  std::string unrenderable_words;
   const char *text = utf8_text->c_str();
   size_t offset = 0;
   int num_dropped = 0;
@@ -625,13 +626,15 @@ int StringRenderer::StripUnrenderableWords(std::string *utf8_text) const {
       output_text.append(text + offset, word_len);
     } else {
       ++num_dropped;
+      unrenderable_words.append(text + offset, word_len);
+      unrenderable_words.append(" ");
     }
     offset += word_len;
   }
   utf8_text->swap(output_text);
 
   if (num_dropped > 0) {
-    tprintf("Stripped %d unrenderable words\n", num_dropped);
+    tprintf("Stripped %d unrenderable word(s): '%s'\n", num_dropped, unrenderable_words.c_str());
   }
   return num_dropped;
 }
